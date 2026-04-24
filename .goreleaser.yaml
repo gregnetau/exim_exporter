@@ -75,12 +75,12 @@ nfpms:
       - systemd
     package_name: prometheus-exim-exporter
     file_name_template: "{{ .ConventionalFileName }}"
-    homepage: https://github.com/gvengel/exim_exporter
-    maintainer: Gabe Van Engel <gabe@schizoid.net>
+    homepage: https://github.com/gregnetau/exim_exporter
+    maintainer: gregnetau <grerg@greg.au>
     description: |-
-      Prometheus exporter for the exim4 mail server.
-      The exim exporter exports metrics from the exim4 mail
-      server for consumption by prometheus.
+      Prometheus exporter for the exim mail server.
+      The exim exporter exports metrics from the exim
+      mail server for consumption by prometheus.
     license: MIT
     formats:
       - deb
@@ -88,8 +88,7 @@ nfpms:
       - exim4-config
     section: misc
     priority: optional
-    # Set the meta flag, so we can rename the binary in the debian package
-    meta: true
+    # meta: true   <-- REMOVED, this was causing arch=all and empty ArtifactPath
     contents:
       - src: '{{ .ArtifactPath }}'
         dst: /usr/bin/prometheus-exim-exporter
