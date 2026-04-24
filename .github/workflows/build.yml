@@ -20,7 +20,7 @@ jobs:
       - run: go vet .
       - run: go test -v .
   release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: test
     steps:
       - uses: docker/login-action@v3
