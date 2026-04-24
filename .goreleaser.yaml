@@ -66,8 +66,8 @@ dockers:
     goarch: amd64
     dockerfile: .goreleaser.dockerfile
     image_templates:
-      - "gvengel/exim_exporter:latest"
-      - "gvengel/exim_exporter:{{ .Tag }}"
+      - "gregdotnetau/exim_exporter:latest"
+      - "gregdotnetau/exim_exporter:{{ .Tag }}"
     ids:
       - standard
 nfpms:
