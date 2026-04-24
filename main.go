@@ -423,6 +423,14 @@ func (e *Exporter) TailMainLog(lines chan *tail.Line) {
 				eximMessageErrors.With(prometheus.Labels{"status": match[1], "enhanced": match[2]}).Inc()
 			}
 		}
+        // Also capture SMTP errors from connection log lines (H= format)
+        // which exim emits during active delivery attempts but without a ==/** flag.
+        if !errorFlag && strings.Contains(line.Text, "SMTP error from remote mail server") {
+            match := errorCodeRegexp.FindStringSubmatch(line.Text)
+            if len(match) > 0 {
+                eximMessageErrors.With(prometheus.Labels{"status": match[1], "enhanced": match[2]}).Inc()
+            }
+        }		
 	}
 }
 func (e *Exporter) TailRejectLog(lines chan *tail.Line) {
