@@ -1,7 +1,9 @@
-# Exim Exporter for Prometheus
+# Exim Exporter for Prometheus (2026)
 
-[![build](https://github.com/gvengel/exim_exporter/actions/workflows/build.yml/badge.svg)](https://github.com/gvengel/exim_exporter/actions/workflows/build.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gvengel/exim_exporter)](https://goreportcard.com/report/github.com/gvengel/exim_exporter)
+Credits to @gvengel - his original work has been updated/extended here to monitor 20+ exim instances at scale.
+
+[![build](https://github.com/gregnetau/exim_exporter/actions/workflows/build.yml/badge.svg)](https://github.com/gregnetau/exim_exporter/actions/workflows/build.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gregnetau/exim_exporter)](https://goreportcard.com/report/github.com/gregnetau/exim_exporter)
 
 This prometheus exporter monitors the [exim4](https://www.exim.org/) mail transport server.
 Stats are collected by tailing exim's log files, counting messages queued on disk,
@@ -9,7 +11,7 @@ and observing running exim processes.
 
 ## Installing
 
-Download and run the latest binary from the [releases tab](https://github.com/gvengel/exim_exporter/releases/latest).
+Download and run the latest binary from the [releases tab](https://github.com/gregnetau/exim_exporter/releases/latest).
 
 ```shell script
 ./exim_exporter
