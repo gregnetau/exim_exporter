@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
       - run: go fmt .
@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
       - run: git fetch --force --tags
       - run: sudo release/install-deps.sh
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
       - uses: goreleaser/goreleaser-action@v7
