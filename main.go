@@ -120,6 +120,10 @@ var processFlags = map[string]string{
 type Process struct {
 	cmdline []string
 	leader  bool
+	// parentCmd is the parent's argv[0]; empty if unknown. The listening daemon is the
+	// -bd/-bdf process whose parent is not exim (its SMTP children have the daemon as parent).
+	// Process-group leadership alone misses "exim -bdf" run from a container entrypoint.
+	parentCmd string
 }
 
 // map globals we can override in tests
@@ -130,18 +134,30 @@ var (
 			return nil, err
 		}
 		result := make([]*Process, 0)
+		argv0 := make(map[int32]string)
+		ppids := make(map[int32]int32)
+		cmdlines := make(map[int32][]string)
+		order := make([]int32, 0)
 		for _, p := range processes {
 			cmdline, err := p.CmdlineSlice()
 			if err != nil {
 				continue
 			}
-			pid := int(p.Pid)
-			pgid, err := syscall.Getpgid(pid)
+			if len(cmdline) > 0 {
+				argv0[p.Pid] = cmdline[0]
+			}
+			if ppid, err := p.Ppid(); err == nil {
+				ppids[p.Pid] = ppid
+			}
+			cmdlines[p.Pid] = cmdline
+			order = append(order, p.Pid)
+		}
+		for _, pid := range order {
+			pgid, err := syscall.Getpgid(int(pid))
 			if err != nil {
 				continue
 			}
-			leader := pid == pgid
-			result = append(result, &Process{cmdline, leader})
+			result = append(result, &Process{cmdlines[pid], int(pid) == pgid, argv0[ppids[pid]]})
 		}
 		return result, nil
 	}
@@ -218,14 +234,14 @@ func (e *Exporter) ProcessStates() map[string]float64 {
 		if len(p.cmdline) < 2 {
 			states["other"] += 1
 		} else if state, ok := processFlags[p.cmdline[1]]; ok {
-			if state == "handling" && p.leader {
+			if state == "handling" && (p.leader || (p.parentCmd != "" && path.Base(p.parentCmd) != e.eximBin)) {
 				states["daemon"] += 1
 			} else {
 				states[state] += 1
 			}
 		} else {
 			isDaemon := false
-			if p.leader {
+			if p.leader || (p.parentCmd != "" && path.Base(p.parentCmd) != e.eximBin) {
 				for _, arg := range p.cmdline {
 					if arg == "-bd" || arg == "-bdf" {
 						isDaemon = true
@@ -423,14 +439,14 @@ func (e *Exporter) TailMainLog(lines chan *tail.Line) {
 				eximMessageErrors.With(prometheus.Labels{"status": match[1], "enhanced": match[2]}).Inc()
 			}
 		}
-        // Also capture SMTP errors from connection log lines (H= format)
-        // which exim emits during active delivery attempts but without a ==/** flag.
-        if !errorFlag && strings.Contains(line.Text, "SMTP error from remote mail server") {
-            match := errorCodeRegexp.FindStringSubmatch(line.Text)
-            if len(match) > 0 {
-                eximMessageErrors.With(prometheus.Labels{"status": match[1], "enhanced": match[2]}).Inc()
-            }
-        }		
+		// Also capture SMTP errors from connection log lines (H= format)
+		// which exim emits during active delivery attempts but without a ==/** flag.
+		if !errorFlag && strings.Contains(line.Text, "SMTP error from remote mail server") {
+			match := errorCodeRegexp.FindStringSubmatch(line.Text)
+			if len(match) > 0 {
+				eximMessageErrors.With(prometheus.Labels{"status": match[1], "enhanced": match[2]}).Inc()
+			}
+		}
 	}
 }
 func (e *Exporter) TailRejectLog(lines chan *tail.Line) {
