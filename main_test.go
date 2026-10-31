@@ -206,7 +206,7 @@ func TestMetrics(t *testing.T) {
 	}
 	getProcesses = func() ([]*Process, error) {
 		return []*Process{
-			{[]string{"/bin/bash", "-x"}, false},
+			{[]string{"/bin/bash", "-x"}, false, ""},
 		}, nil
 	}
 	t.Run("down", func(t *testing.T) {
@@ -224,24 +224,37 @@ func TestMetrics(t *testing.T) {
 	}
 	getProcesses = func() ([]*Process, error) {
 		return []*Process{
-			{[]string{"/usr/sbin/exim4", "-ps", "-bd", "-q15m", "-oP", "/var/spool/exim/exim-daemon.pid"}, true},
+			{[]string{"/usr/sbin/exim4", "-ps", "-bd", "-q15m", "-oP", "/var/spool/exim/exim-daemon.pid"}, true, ""},
 		}, nil
 	}
 	t.Run("daemon", func(t *testing.T) {
 		collectAndCompareTestCase("daemon", registry, t)
 	})
+	// "exim -bdf" started by a container entrypoint: not a process-group leader, parent is bash.
+	// Its forked SMTP handlers have the daemon as parent.
 	getProcesses = func() ([]*Process, error) {
 		return []*Process{
-			{[]string{"/bin/bash", "-x"}, false},
-			{[]string{"/usr/sbin/exim4"}, false},
-			{[]string{"/usr/sbin/exim4", "-q30m"}, false},
-			{[]string{"/usr/sbin/exim4", "-bd"}, true},
-			{[]string{"/usr/sbin/exim4", "-qG"}, false},
-			{[]string{"/usr/sbin/exim4", "-Mc", "1jofsL-0006tb-8D"}, false},
-			{[]string{"/usr/sbin/exim4", "-Mc", "1jofsL-0006tb-8D"}, false},
-			{[]string{"/usr/sbin/exim4", "-bd"}, false},
-			{[]string{"/usr/sbin/exim4", "-bd"}, false},
-			{[]string{"/usr/sbin/exim4", "-bd"}, false},
+			{[]string{"/bin/bash", "/start.sh"}, true, ""},
+			{[]string{"/usr/sbin/exim4", "-bdf", "-q30m", "-oX", "192.0.2.1:25"}, false, "/bin/bash"},
+			{[]string{"/usr/sbin/exim4", "-bdf", "-q30m", "-oX", "192.0.2.1:25"}, false, "/usr/sbin/exim4"},
+			{[]string{"/usr/sbin/exim4", "-bdf", "-q30m", "-oX", "192.0.2.1:25"}, false, "/usr/sbin/exim4"},
+		}, nil
+	}
+	t.Run("foreground", func(t *testing.T) {
+		collectAndCompareTestCase("foreground", registry, t)
+	})
+	getProcesses = func() ([]*Process, error) {
+		return []*Process{
+			{[]string{"/bin/bash", "-x"}, false, ""},
+			{[]string{"/usr/sbin/exim4"}, false, ""},
+			{[]string{"/usr/sbin/exim4", "-q30m"}, false, ""},
+			{[]string{"/usr/sbin/exim4", "-bd"}, true, ""},
+			{[]string{"/usr/sbin/exim4", "-qG"}, false, ""},
+			{[]string{"/usr/sbin/exim4", "-Mc", "1jofsL-0006tb-8D"}, false, ""},
+			{[]string{"/usr/sbin/exim4", "-Mc", "1jofsL-0006tb-8D"}, false, ""},
+			{[]string{"/usr/sbin/exim4", "-bd"}, false, ""},
+			{[]string{"/usr/sbin/exim4", "-bd"}, false, ""},
+			{[]string{"/usr/sbin/exim4", "-bd"}, false, ""},
 		}, nil
 	}
 	t.Run("up", func(t *testing.T) {
